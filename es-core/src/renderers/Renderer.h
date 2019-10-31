@@ -6,7 +6,8 @@
 
 class  Transform4x4f;
 class  Vector2i;
-struct SDL_Window;
+//struct SDL_Window;
+typedef struct go2_display go2_display_t;
 
 namespace Renderer
 {
@@ -68,7 +69,7 @@ namespace Renderer
 	void        popClipRect     ();
 	void        drawRect        (const float _x, const float _y, const float _w, const float _h, const unsigned int _color, const unsigned int _colorEnd, bool horizontalGradient = false, const Blend::Factor _srcBlendFactor = Blend::SRC_ALPHA, const Blend::Factor _dstBlendFactor = Blend::ONE_MINUS_SRC_ALPHA);
 
-	SDL_Window* getSDLWindow    ();
+	//SDL_Window* getSDLWindow    ();
 	int         getWindowWidth  ();
 	int         getWindowHeight ();
 	int         getScreenWidth  ();
@@ -76,6 +77,7 @@ namespace Renderer
 	int         getScreenOffsetX();
 	int         getScreenOffsetY();
 	int         getScreenRotate ();
+	go2_display_t* getDisplay();
 
 	// API specific
 	unsigned int convertColor      (const unsigned int _color);

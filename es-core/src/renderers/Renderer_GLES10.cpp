@@ -8,9 +8,14 @@
 #include <GLES/gl.h>
 #include <SDL.h>
 
+#include <go2/display.h>
+#include <drm/drm_fourcc.h>
+
 namespace Renderer
 {
-	static SDL_GLContext sdlContext = nullptr;
+	//static SDL_GLContext sdlContext = nullptr;
+	static go2_context_t* context = nullptr;
+	static go2_presenter_t* presenter = nullptr;
 
 	static GLenum convertBlendFactor(const Blend::Factor _blendFactor)
 	{
@@ -62,6 +67,7 @@ namespace Renderer
 
 	void setupWindow()
 	{
+#if 0
 		SDL_GL_SetAttribute(SDL_GL_RED_SIZE,     8);
 		SDL_GL_SetAttribute(SDL_GL_GREEN_SIZE,   8);
 		SDL_GL_SetAttribute(SDL_GL_BLUE_SIZE,    8);
@@ -70,13 +76,30 @@ namespace Renderer
 
 		SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 1);
 		SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 0);
-
+#endif
 	} // setupWindow
 
 	void createContext()
 	{
-		sdlContext = SDL_GL_CreateContext(getSDLWindow());
-		SDL_GL_MakeCurrent(getSDLWindow(), sdlContext);
+		// sdlContext = SDL_GL_CreateContext(getSDLWindow());
+		// SDL_GL_MakeCurrent(getSDLWindow(), sdlContext);
+
+		go2_context_attributes_t attr;
+		attr.major = 1;
+		attr.minor = 0;
+		attr.red_bits = 8;
+		attr.green_bits = 8;
+		attr.blue_bits = 8;
+		attr.alpha_bits = 8;
+		attr.depth_bits = 24;
+		attr.stencil_bits = 0;
+		
+		go2_display_t* display = getDisplay();
+
+		context = go2_context_create(display, 480, 320, &attr);
+		go2_context_make_current(context);
+
+		presenter = go2_presenter_create(display, DRM_FORMAT_RGB565, 0xff080808);
 
 		glClearColor(0.5f, 0.5f, 0.5f, 0.0f);
 
@@ -88,8 +111,13 @@ namespace Renderer
 
 	void destroyContext()
 	{
-		SDL_GL_DeleteContext(sdlContext);
-		sdlContext = nullptr;
+		//SDL_GL_DeleteContext(sdlContext);
+		//sdlContext = nullptr;
+		go2_context_destroy(context);
+		context = nullptr;
+
+		go2_presenter_destroy(presenter);
+		presenter = nullptr;
 
 	} // destroyContext
 
@@ -225,6 +253,7 @@ namespace Renderer
 
 	void setSwapInterval()
 	{
+#if 0
 		// vsync
 		if(Settings::getInstance()->getBool("VSync"))
 		{
@@ -239,12 +268,26 @@ namespace Renderer
 		}
 		else
 			SDL_GL_SetSwapInterval(0);
-
+#endif
 	} // setSwapInterval
 
 	void swapBuffers()
 	{
-		SDL_GL_SwapWindow(getSDLWindow());
+		//SDL_GL_SwapWindow(getSDLWindow());
+
+		if (context)
+		{
+			go2_context_swap_buffers(context);
+
+			go2_surface_t* surface = go2_context_surface_lock(context);
+			go2_presenter_post(presenter,
+						surface,
+						0, 0, 480, 320,
+						0, 0, 320, 480,
+						GO2_ROTATION_DEGREES_270);
+			go2_context_surface_unlock(context, surface);
+		}
+
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
 	} // swapBuffers

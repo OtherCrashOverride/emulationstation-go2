@@ -118,7 +118,7 @@ void Window::textInput(const char* text)
 
 void Window::input(InputConfig* config, Input input)
 {
-	if (config->isMappedTo("screen", input) && input.value == 1)
+	if (config->isMappedTo("prtscn", input) && input.value == 1)
 	{
 		printf("Screenshot.\n");
 		g_screenshot_requested = true;

@@ -11,6 +11,9 @@
 #include <go2/display.h>
 #include <drm/drm_fourcc.h>
 
+bool g_screenshot_requested = false;
+
+
 namespace Renderer
 {
 	//static SDL_GLContext sdlContext = nullptr;
@@ -280,6 +283,31 @@ namespace Renderer
 			go2_context_swap_buffers(context);
 
 			go2_surface_t* surface = go2_context_surface_lock(context);
+
+			if (g_screenshot_requested)
+			{
+				go2_display_t* display = getDisplay();
+				int ss_w = go2_surface_width_get(surface);
+				int ss_h = go2_surface_height_get(surface);
+				
+				go2_surface_t* screenshot = go2_surface_create(display, ss_w, ss_h, DRM_FORMAT_RGB888);
+				if (!screenshot)
+				{
+					printf("go2_surface_create failed.\n");
+					throw std::exception();
+				}
+
+				go2_surface_blit(surface, 0, 0, ss_w, ss_h,
+								screenshot, 0, 0, ss_w, ss_h,
+								GO2_ROTATION_DEGREES_0);
+
+				go2_surface_save_as_png(screenshot, "ScreenShot.png");
+
+				go2_surface_destroy(screenshot);
+				
+				g_screenshot_requested = false;
+			}
+
 			go2_presenter_post(presenter,
 						surface,
 						0, 0, 480, 320,

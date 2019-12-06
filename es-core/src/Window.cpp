@@ -10,6 +10,8 @@
 #include <algorithm>
 #include <iomanip>
 
+extern bool g_screenshot_requested;
+
 Window::Window() : mNormalizeNextUpdate(false), mFrameTimeElapsed(0), mFrameCountElapsed(0), mAverageDeltaTime(10),
 	mAllowSleep(true), mSleeping(false), mTimeSinceLastInput(0), mScreenSaver(NULL), mRenderScreenSaver(false), mInfoPopup(NULL)
 {
@@ -116,6 +118,12 @@ void Window::textInput(const char* text)
 
 void Window::input(InputConfig* config, Input input)
 {
+	if (config->isMappedTo("screen", input) && input.value == 1)
+	{
+		printf("Screenshot.\n");
+		g_screenshot_requested = true;
+	}
+
 	if (mScreenSaver) {
 		if(mScreenSaver->isScreenSaverActive() && Settings::getInstance()->getBool("ScreenSaverControls") &&
 		   (Settings::getInstance()->getString("ScreenSaverBehavior") == "random video"))

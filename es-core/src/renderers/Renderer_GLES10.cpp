@@ -307,7 +307,7 @@ namespace Renderer
 
 				const size_t TIME_LEN_MAX = 128;
 				char filename[TIME_LEN_MAX];
-				strftime (filename, TIME_LEN_MAX, "EmulationStation_%F_%T.png", local);
+				strftime (filename, TIME_LEN_MAX, "EmulationStation_%F_%H-%M-%S.png", local);
 
 				go2_surface_save_as_png(screenshot, filename);
 

@@ -10,6 +10,7 @@
 
 #include <go2/display.h>
 #include <drm/drm_fourcc.h>
+#include <ctime>
 
 bool g_screenshot_requested = false;
 
@@ -289,7 +290,7 @@ namespace Renderer
 				go2_display_t* display = getDisplay();
 				int ss_w = go2_surface_width_get(surface);
 				int ss_h = go2_surface_height_get(surface);
-				
+
 				go2_surface_t* screenshot = go2_surface_create(display, ss_w, ss_h, DRM_FORMAT_RGB888);
 				if (!screenshot)
 				{
@@ -301,7 +302,14 @@ namespace Renderer
 								screenshot, 0, 0, ss_w, ss_h,
 								GO2_ROTATION_DEGREES_0);
 
-				go2_surface_save_as_png(screenshot, "ScreenShot.png");
+				time_t now = time(0);
+				tm* local = localtime(&now);
+
+				const size_t TIME_LEN_MAX = 128;
+				char filename[TIME_LEN_MAX];
+				strftime (filename, TIME_LEN_MAX, "EmulationStation_%F_%T.png", local);
+
+				go2_surface_save_as_png(screenshot, filename);
 
 				go2_surface_destroy(screenshot);
 				

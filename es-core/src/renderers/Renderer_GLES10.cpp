@@ -10,9 +10,11 @@
 
 #include <go2/display.h>
 #include <go2/input.h>
+#include <go2/audio.h>
 #include <drm/drm_fourcc.h>
 #include <ctime>
 #include "BatteryIcons.h"
+#include "VolumeIcons.h"
 
 bool g_screenshot_requested = false;
 
@@ -294,50 +296,100 @@ namespace Renderer
 
 		if (context)
 		{
-			// Battery level
-			const uint8_t* src = battery_image.pixel_data;
-			int src_stride = 32 * sizeof(short);
+			{
+				// Battery level
+				const uint8_t* src = battery_image.pixel_data;
+				int src_stride = 32 * sizeof(short);
 
-			uint8_t* dst = (uint8_t*)go2_surface_map(titlebarSurface);
-			int dst_stride = go2_surface_stride_get(titlebarSurface);
+				uint8_t* dst = (uint8_t*)go2_surface_map(titlebarSurface);
+				int dst_stride = go2_surface_stride_get(titlebarSurface);
 
-			go2_battery_state_t batteryState;
-			go2_input_battery_read(input, &batteryState);
+				go2_battery_state_t batteryState;
+				go2_input_battery_read(input, &batteryState);
 
-			int batteryIndex;
-			if (batteryState.level <= 5)
-			{
-				batteryIndex = 0;
-			}
-			else if (batteryState.level <= 25)
-			{
-				batteryIndex = 1;
-			}
-			else if (batteryState.level <= 50)
-			{
-				batteryIndex = 2;
-			}
-			else if (batteryState.level <= 75)
-			{
-				batteryIndex = 3;
-			}
-			else
-			{
-				batteryIndex = 4;
+				int batteryIndex;
+				if (batteryState.level <= 5)
+				{
+					batteryIndex = 0;
+				}
+				else if (batteryState.level <= 25)
+				{
+					batteryIndex = 1;
+				}
+				else if (batteryState.level <= 50)
+				{
+					batteryIndex = 2;
+				}
+				else if (batteryState.level <= 75)
+				{
+					batteryIndex = 3;
+				}
+				else
+				{
+					batteryIndex = 4;
+				}
+				
+				src += (batteryIndex * 16 * src_stride);
+				dst += (480 - 32) * sizeof(short);
+
+				for (int y = 0; y < 16; ++y)
+				{
+					memcpy(dst, src, 32 * sizeof(short));
+
+					src += src_stride;
+					dst += dst_stride;
+				}
 			}
 			
-			src += (batteryIndex * 16 * src_stride);
-			dst += (480 - 32) * sizeof(short);
-
-			for (int y = 0; y < 16; ++y)
 			{
-				memcpy(dst, src, 32 * sizeof(short));
+				// Volume level
+				const uint8_t* src = volume_image.pixel_data;
+				int src_stride = 32 * sizeof(short);
 
-				src += src_stride;
-				dst += dst_stride;
+				uint8_t* dst = (uint8_t*)go2_surface_map(titlebarSurface);
+				int dst_stride = go2_surface_stride_get(titlebarSurface);
+
+				uint32_t volume = go2_audio_volume_get(NULL);
+
+				int volumeIndex;
+				if (volume == 0)
+				{
+					volumeIndex = 0;
+				}
+				else if (volume <= 20)
+				{
+					volumeIndex = 1;
+				}
+				else if (volume <= 40)
+				{
+					volumeIndex = 2;
+				}
+				else if (volume <= 60)
+				{
+					volumeIndex = 3;
+				}
+				else if (volume <= 80)
+				{
+					volumeIndex = 4;
+				}
+				else
+				{
+					volumeIndex = 5;
+				}
+				
+				src += (volumeIndex * 16 * src_stride);
+				//dst += (480 - 32) * sizeof(short);
+
+				for (int y = 0; y < 16; ++y)
+				{
+					memcpy(dst, src, 32 * sizeof(short));
+
+					src += src_stride;
+					dst += dst_stride;
+				}
 			}
 
-			
+
 			go2_context_swap_buffers(context);
 			go2_surface_t* surface = go2_context_surface_lock(context);
 

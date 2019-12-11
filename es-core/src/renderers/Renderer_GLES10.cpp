@@ -9,11 +9,16 @@
 #include <SDL.h>
 
 #include <go2/display.h>
+#include <go2/input.h>
 #include <drm/drm_fourcc.h>
 #include <ctime>
+#include "BatteryIcons.h"
 
 bool g_screenshot_requested = false;
 
+static go2_input_t* input = nullptr;
+static go2_surface_t* titlebarSurface = nullptr;
+static unsigned int frame = 0;
 
 namespace Renderer
 {
@@ -87,6 +92,7 @@ namespace Renderer
 	{
 		// sdlContext = SDL_GL_CreateContext(getSDLWindow());
 		// SDL_GL_MakeCurrent(getSDLWindow(), sdlContext);
+		input = go2_input_create();
 
 		go2_context_attributes_t attr;
 		attr.major = 1;
@@ -99,6 +105,8 @@ namespace Renderer
 		attr.stencil_bits = 0;
 		
 		go2_display_t* display = getDisplay();
+
+		titlebarSurface = go2_surface_create(display, 480, 16, DRM_FORMAT_RGB565);
 
 		context = go2_context_create(display, 480, 320, &attr);
 		go2_context_make_current(context);
@@ -123,6 +131,11 @@ namespace Renderer
 		go2_presenter_destroy(presenter);
 		presenter = nullptr;
 
+		go2_surface_destroy(titlebarSurface);
+		titlebarSurface = nullptr;
+
+		go2_input_destroy(input);
+		input = nullptr;
 	} // destroyContext
 
 	unsigned int createTexture(const Texture::Type _type, const bool _linear, const bool _repeat, const unsigned int _width, const unsigned int _height, void* _data)
@@ -281,9 +294,56 @@ namespace Renderer
 
 		if (context)
 		{
-			go2_context_swap_buffers(context);
+			// Battery level
+			const uint8_t* src = battery_image.pixel_data;
+			int src_stride = 32 * sizeof(short);
 
+			uint8_t* dst = (uint8_t*)go2_surface_map(titlebarSurface);
+			int dst_stride = go2_surface_stride_get(titlebarSurface);
+
+			go2_battery_state_t batteryState;
+			go2_input_battery_read(input, &batteryState);
+
+			int batteryIndex;
+			if (batteryState.level <= 5)
+			{
+				batteryIndex = 0;
+			}
+			else if (batteryState.level <= 25)
+			{
+				batteryIndex = 1;
+			}
+			else if (batteryState.level <= 50)
+			{
+				batteryIndex = 2;
+			}
+			else if (batteryState.level <= 75)
+			{
+				batteryIndex = 3;
+			}
+			else
+			{
+				batteryIndex = 4;
+			}
+			
+			src += (batteryIndex * 16 * src_stride);
+			dst += (480 - 32) * sizeof(short);
+
+			for (int y = 0; y < 16; ++y)
+			{
+				memcpy(dst, src, 32 * sizeof(short));
+
+				src += src_stride;
+				dst += dst_stride;
+			}
+
+			
+			go2_context_swap_buffers(context);
 			go2_surface_t* surface = go2_context_surface_lock(context);
+
+			go2_surface_blit(titlebarSurface, 0, 0, 480, 16,
+							 surface, 0, 0, 480, 16,
+							 GO2_ROTATION_DEGREES_0);
 
 			if (g_screenshot_requested)
 			{
@@ -326,6 +386,7 @@ namespace Renderer
 
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
+		//printf("Frame %d\n", frame++);
 	} // swapBuffers
 
 } // Renderer::

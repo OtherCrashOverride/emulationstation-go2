@@ -15,6 +15,7 @@
 #include <ctime>
 #include "BatteryIcons.h"
 #include "VolumeIcons.h"
+#include "OdroidImage.h"
 
 bool g_screenshot_requested = false;
 
@@ -383,6 +384,25 @@ namespace Renderer
 				for (int y = 0; y < 16; ++y)
 				{
 					memcpy(dst, src, 32 * sizeof(short));
+
+					src += src_stride;
+					dst += dst_stride;
+				}
+			}
+
+			{
+				// Title
+				const uint8_t* src = odroid_image.pixel_data;
+				int src_stride = odroid_image.width * sizeof(short);
+
+				uint8_t* dst = (uint8_t*)go2_surface_map(titlebarSurface);
+				int dst_stride = go2_surface_stride_get(titlebarSurface);
+
+				dst += ((480 / 2) - (odroid_image.width / 2)) * sizeof(short);
+
+				for (int y = 0; y < 16; ++y)
+				{
+					memcpy(dst, src, src_stride);
 
 					src += src_stride;
 					dst += dst_stride;

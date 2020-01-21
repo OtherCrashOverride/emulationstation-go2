@@ -20,8 +20,13 @@
 #include <algorithm>
 #include "platform.h"
 
+#include <go2/display.h>
+
+
 GuiMenu::GuiMenu(Window* window) : GuiComponent(window), mMenu(window, "MAIN MENU"), mVersion(window)
 {
+	addEntry("DISPLAY SETTINGS", 0x777777FF, true, [this] { openDisplaySettings(); });
+
 	bool isFullUI = UIModeController::getInstance()->isUIModeFull();
 
 	if (isFullUI)
@@ -48,6 +53,19 @@ GuiMenu::GuiMenu(Window* window) : GuiComponent(window), mMenu(window, "MAIN MEN
 	addVersionInfo();
 	setSize(mMenu.getSize());
 	setPosition((Renderer::getScreenWidth() - mSize.x()) / 2, Renderer::getScreenHeight() * 0.15f);
+}
+
+void GuiMenu::openDisplaySettings()
+{
+	// Brightness
+	auto s = new GuiSettings(mWindow, "DISPLAY");
+
+	auto bright = std::make_shared<SliderComponent>(mWindow, 0.f, 100.f, 1.f, "%");
+	bright->setValue((float)go2_display_backlight_get(NULL));
+	s->addWithLabel("BRIGHTNESS", bright);
+	s->addSaveFunc([bright] { go2_display_backlight_set(NULL, (int)Math::round(bright->getValue())); });
+
+	mWindow->pushGui(s);
 }
 
 void GuiMenu::openScraperSettings()

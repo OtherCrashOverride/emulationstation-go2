@@ -8,12 +8,12 @@ while true; do
     [ -f /tmp/es-restart ] && continue
     if [ -f /tmp/es-sysrestart ]; then
         rm -f /tmp/es-sysrestart
-        sudo reboot
+        systemctl reboot
         break
     fi
     if [ -f /tmp/es-shutdown ]; then
         rm -f /tmp/es-shutdown
-        sudo poweroff
+        systemctl poweroff
         break
     fi
     break

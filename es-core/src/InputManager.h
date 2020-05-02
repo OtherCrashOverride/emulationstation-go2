@@ -25,6 +25,7 @@ private:
 	std::map<SDL_JoystickID, InputConfig*> mInputConfigs;
 	InputConfig* mKeyboardInputConfig;
 	InputConfig* mCECInputConfig;
+	InputConfig* mGo2InputConfig;
 
 	std::map<SDL_JoystickID, int*> mPrevAxisValues;
 
@@ -57,6 +58,7 @@ public:
 	InputConfig* getInputConfigByDevice(int deviceId);
 
 	bool parseEvent(const SDL_Event& ev, Window* window);
+	void processInput(Window* window);
 };
 
 #endif // ES_CORE_INPUT_MANAGER_H

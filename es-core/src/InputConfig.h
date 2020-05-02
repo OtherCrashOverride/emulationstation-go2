@@ -13,6 +13,7 @@ namespace pugi { class xml_node; }
 
 #define DEVICE_KEYBOARD -1
 #define DEVICE_CEC      -2
+#define DEVICE_GO2      -3
 
 enum InputType
 {

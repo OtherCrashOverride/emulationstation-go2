@@ -10,9 +10,11 @@
 #include <SDL.h>
 #include <iostream>
 #include <assert.h>
+#include <go2/input.h>
 
 #define KEYBOARD_GUID_STRING "-1"
 #define CEC_GUID_STRING      "-2"
+#define GO2_GUID_STRING      "-3"
 
 // SO HEY POTENTIAL POOR SAP WHO IS TRYING TO MAKE SENSE OF ALL THIS (by which I mean my future self)
 // There are like four distinct IDs used for joysticks (crazy, right?)
@@ -24,6 +26,11 @@
 //    This is actually just an SDL_JoystickID (also called instance ID), but -1 means "keyboard" instead of "error."
 // 4. Joystick GUID - this is some squashed version of joystick vendor, version, and a bunch of other device-specific things.
 //    It should remain the same across runs of the program/system restarts/device reordering and is what I use to identify which joystick to load.
+
+// hack for libgo2 input support
+static go2_input_state_t* gamepadState;
+static go2_input_state_t* prevGamepadState;
+static go2_input_t* input;
 
 // hack for cec support
 int SDL_USER_CECBUTTONDOWN = -1;
@@ -73,6 +80,33 @@ void InputManager::init()
 	CECInput::init();
 	mCECInputConfig = new InputConfig(DEVICE_CEC, "CEC", CEC_GUID_STRING);
 	loadInputConfig(mCECInputConfig);
+
+
+	input = go2_input_create();
+	gamepadState = go2_input_state_create();
+	prevGamepadState = go2_input_state_create();
+	mGo2InputConfig = new InputConfig(DEVICE_GO2, "GO2", GO2_GUID_STRING);
+
+	go2_input_state_read(input, gamepadState);
+	
+
+	mGo2InputConfig->mapInput("up", Input(DEVICE_GO2, TYPE_BUTTON, 0, 1, true));
+	mGo2InputConfig->mapInput("down", Input(DEVICE_GO2, TYPE_BUTTON, 1, 1, true));
+	mGo2InputConfig->mapInput("left", Input(DEVICE_GO2, TYPE_BUTTON, 2, 1, true));
+	mGo2InputConfig->mapInput("right", Input(DEVICE_GO2, TYPE_BUTTON, 3, 1, true));
+
+	mGo2InputConfig->mapInput("a", Input(DEVICE_GO2, TYPE_BUTTON, 4, 1, true));
+	mGo2InputConfig->mapInput("b", Input(DEVICE_GO2, TYPE_BUTTON, 5, 1, true));
+	mGo2InputConfig->mapInput("x", Input(DEVICE_GO2, TYPE_BUTTON, 6, 1, true));
+	mGo2InputConfig->mapInput("y", Input(DEVICE_GO2, TYPE_BUTTON, 7, 1, true));
+
+	mGo2InputConfig->mapInput("select", Input(DEVICE_GO2, TYPE_BUTTON, 8, 1, true));
+	mGo2InputConfig->mapInput("start", Input(DEVICE_GO2, TYPE_BUTTON, 9, 1, true));
+
+	mGo2InputConfig->mapInput("pageup", Input(DEVICE_GO2, TYPE_BUTTON, 10, 1, true));
+	mGo2InputConfig->mapInput("pagedown", Input(DEVICE_GO2, TYPE_BUTTON, 11, 1, true));
+	
+	mGo2InputConfig->mapInput("prtscn", Input(DEVICE_GO2, TYPE_BUTTON, 12, 1, true));
 }
 
 void InputManager::addJoystickByDeviceIndex(int id)
@@ -169,6 +203,17 @@ void InputManager::deinit()
 
 	SDL_JoystickEventState(SDL_DISABLE);
 	SDL_QuitSubSystem(SDL_INIT_JOYSTICK);
+
+
+	go2_input_destroy(input);
+	input = NULL;
+	go2_input_state_destroy(gamepadState);
+	gamepadState = NULL;
+	go2_input_state_destroy(prevGamepadState);
+	prevGamepadState = NULL;
+
+	delete mGo2InputConfig;
+	mGo2InputConfig = NULL;
 }
 
 int InputManager::getNumJoysticks() { return (int)mJoysticks.size(); }
@@ -280,6 +325,90 @@ bool InputManager::parseEvent(const SDL_Event& ev, Window* window)
 	}
 
 	return false;
+}
+
+void InputManager::processInput(Window* window)
+{
+	go2_input_state_t* tempState = prevGamepadState;
+	prevGamepadState = gamepadState;
+	gamepadState = tempState;
+
+	go2_input_state_read(input, gamepadState);
+
+	// DPad
+	if (go2_input_state_button_get(gamepadState, Go2InputButton_DPadUp) !=
+		go2_input_state_button_get(prevGamepadState, Go2InputButton_DPadUp))
+	{
+		window->input(mGo2InputConfig, Input(DEVICE_GO2, TYPE_BUTTON, 0, go2_input_state_button_get(gamepadState, Go2InputButton_DPadUp) == ButtonState_Pressed, false));
+	}
+	if (go2_input_state_button_get(gamepadState, Go2InputButton_DPadDown) !=
+		go2_input_state_button_get(prevGamepadState, Go2InputButton_DPadDown))
+	{
+		window->input(mGo2InputConfig, Input(DEVICE_GO2, TYPE_BUTTON, 1, go2_input_state_button_get(gamepadState, Go2InputButton_DPadDown) == ButtonState_Pressed, false));
+	}
+	if (go2_input_state_button_get(gamepadState, Go2InputButton_DPadLeft) !=
+		go2_input_state_button_get(prevGamepadState, Go2InputButton_DPadLeft))
+	{
+		window->input(mGo2InputConfig, Input(DEVICE_GO2, TYPE_BUTTON, 2, go2_input_state_button_get(gamepadState, Go2InputButton_DPadLeft) == ButtonState_Pressed, false));
+	}
+	if (go2_input_state_button_get(gamepadState, Go2InputButton_DPadRight) !=
+		go2_input_state_button_get(prevGamepadState, Go2InputButton_DPadRight))
+	{
+		window->input(mGo2InputConfig, Input(DEVICE_GO2, TYPE_BUTTON, 3, go2_input_state_button_get(gamepadState, Go2InputButton_DPadRight) == ButtonState_Pressed, false));
+	}
+
+	// A/B/X/Y
+	if (go2_input_state_button_get(gamepadState, Go2InputButton_A) !=
+		go2_input_state_button_get(prevGamepadState, Go2InputButton_A))
+	{
+		window->input(mGo2InputConfig, Input(DEVICE_GO2, TYPE_BUTTON, 4, go2_input_state_button_get(gamepadState, Go2InputButton_A) == ButtonState_Pressed, false));
+	}
+	if (go2_input_state_button_get(gamepadState, Go2InputButton_B) !=
+		go2_input_state_button_get(prevGamepadState, Go2InputButton_B))
+	{
+		window->input(mGo2InputConfig, Input(DEVICE_GO2, TYPE_BUTTON, 5, go2_input_state_button_get(gamepadState, Go2InputButton_B) == ButtonState_Pressed, false));
+	}
+	if (go2_input_state_button_get(gamepadState, Go2InputButton_X) !=
+		go2_input_state_button_get(prevGamepadState, Go2InputButton_X))
+	{
+		window->input(mGo2InputConfig, Input(DEVICE_GO2, TYPE_BUTTON, 6, go2_input_state_button_get(gamepadState, Go2InputButton_X) == ButtonState_Pressed, false));
+	}
+	if (go2_input_state_button_get(gamepadState, Go2InputButton_Y) !=
+		go2_input_state_button_get(prevGamepadState, Go2InputButton_Y))
+	{
+		window->input(mGo2InputConfig, Input(DEVICE_GO2, TYPE_BUTTON, 7, go2_input_state_button_get(gamepadState, Go2InputButton_Y) == ButtonState_Pressed, false));
+	}
+
+	// Select/Start
+	if (go2_input_state_button_get(gamepadState, Go2InputButton_F3) !=
+		go2_input_state_button_get(prevGamepadState, Go2InputButton_F3))
+	{
+		window->input(mGo2InputConfig, Input(DEVICE_GO2, TYPE_BUTTON, 8, go2_input_state_button_get(gamepadState, Go2InputButton_F3) == ButtonState_Pressed, false));
+	}
+	if (go2_input_state_button_get(gamepadState, Go2InputButton_F4) !=
+		go2_input_state_button_get(prevGamepadState, Go2InputButton_F4))
+	{
+		window->input(mGo2InputConfig, Input(DEVICE_GO2, TYPE_BUTTON, 9, go2_input_state_button_get(gamepadState, Go2InputButton_F4) == ButtonState_Pressed, false));
+	}
+
+	// PageUp/PageDown
+	if (go2_input_state_button_get(gamepadState, Go2InputButton_TopLeft) !=
+		go2_input_state_button_get(prevGamepadState, Go2InputButton_TopLeft))
+	{
+		window->input(mGo2InputConfig, Input(DEVICE_GO2, TYPE_BUTTON, 10, go2_input_state_button_get(gamepadState, Go2InputButton_TopLeft) == ButtonState_Pressed, false));
+	}
+	if (go2_input_state_button_get(gamepadState, Go2InputButton_TopRight) !=
+		go2_input_state_button_get(prevGamepadState, Go2InputButton_TopRight))
+	{
+		window->input(mGo2InputConfig, Input(DEVICE_GO2, TYPE_BUTTON, 11, go2_input_state_button_get(gamepadState, Go2InputButton_TopRight) == ButtonState_Pressed, false));
+	}
+
+	// PrintScreen
+	if (go2_input_state_button_get(gamepadState, Go2InputButton_F2) !=
+		go2_input_state_button_get(prevGamepadState, Go2InputButton_F2))
+	{
+		window->input(mGo2InputConfig, Input(DEVICE_GO2, TYPE_BUTTON, 12, go2_input_state_button_get(gamepadState, Go2InputButton_F2) == ButtonState_Pressed, false));
+	}	
 }
 
 bool InputManager::loadInputConfig(InputConfig* config)

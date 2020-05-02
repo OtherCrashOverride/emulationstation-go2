@@ -398,11 +398,13 @@ int main(int argc, char* argv[])
 		{
 			do
 			{
-				InputManager::getInstance()->parseEvent(event, &window);
+				//InputManager::getInstance()->parseEvent(event, &window);
 
 				if(event.type == SDL_QUIT)
 					running = false;
 			} while(SDL_PollEvent(&event));
+
+			InputManager::getInstance()->processInput(&window);
 
 			// triggered if exiting from SDL_WaitEvent due to event
 			if (ps_standby)

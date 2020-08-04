@@ -16,6 +16,8 @@
 #include "Window.h"
 #include <assert.h>
 
+extern bool global_isMultiplayer;
+
 FileData::FileData(FileType type, const std::string& path, SystemEnvironmentData* envData, SystemData* system)
 	: mType(type), mPath(path), mSystem(system), mEnvData(envData), mSourceFileData(NULL), mParent(NULL), metadata(type == GAME ? GAME_METADATA : FOLDER_METADATA) // metadata is REALLY set in the constructor!
 {
@@ -279,10 +281,12 @@ void FileData::launchGame(Window* window)
 	const std::string rom      = Utils::FileSystem::getEscapedPath(getPath());
 	const std::string basename = Utils::FileSystem::getStem(getPath());
 	const std::string rom_raw  = Utils::FileSystem::getPreferredPath(getPath());
+	const std::string multiplayer = global_isMultiplayer ? "-mp" : "";
 
 	command = Utils::String::replace(command, "%ROM%", rom);
 	command = Utils::String::replace(command, "%BASENAME%", basename);
 	command = Utils::String::replace(command, "%ROM_RAW%", rom_raw);
+	command = Utils::String::replace(command, "%MP%", multiplayer);
 
 	Scripting::fireEvent("game-start", rom, basename);
 

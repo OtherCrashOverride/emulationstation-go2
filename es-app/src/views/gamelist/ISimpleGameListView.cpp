@@ -7,6 +7,8 @@
 #include "Sound.h"
 #include "SystemData.h"
 
+bool global_isMultiplayer = false;
+
 ISimpleGameListView::ISimpleGameListView(Window* window, FileData* root) : IGameListView(window, root),
 	mHeaderText(window), mHeaderImage(window), mBackground(window)
 {
@@ -85,6 +87,8 @@ bool ISimpleGameListView::input(InputConfig* config, Input input)
 			FileData* cursor = getCursor();
 			if(cursor->getType() == GAME)
 			{
+				global_isMultiplayer = false;
+
 				Sound::getFromTheme(getTheme(), getName(), "launch")->play();
 				launch(cursor);
 			}else{
@@ -136,16 +140,15 @@ bool ISimpleGameListView::input(InputConfig* config, Input input)
 			}
 		}else if (config->isMappedTo("x", input))
 		{
-			if (mRoot->getSystem()->isGameSystem())
+			FileData* cursor = getCursor();
+			if(cursor->getType() == GAME)
 			{
-				// go to random system game
-				FileData* randomGame = getCursor()->getSystem()->getRandomGame();
-				if (randomGame)
-				{
-					setCursor(randomGame);
-				}
-				return true;
+				global_isMultiplayer = true;
+
+				Sound::getFromTheme(getTheme(), getName(), "launch")->play();
+				launch(cursor);
 			}
+			return true;
 		}else if (config->isMappedTo("y", input) && !UIModeController::getInstance()->isUIModeKid())
 		{
 			if(mRoot->getSystem()->isGameSystem())
